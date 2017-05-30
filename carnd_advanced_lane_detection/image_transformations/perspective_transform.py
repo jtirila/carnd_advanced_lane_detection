@@ -1,18 +1,22 @@
 import cv2
+import numpy as np
 
-# TODO : determine good points for perspective transform
-ROAD_SRC = ((1, 2))
-ROAD_DST = ((1, 2))
+# TODO : determine good points for perspective transform, these are just the result of some early experiments
+ROAD_SRC = np.float32([[285, 720], [578, 473], [721, 473], [1172, 720]])
+ROAD_DST = np.float32([[285, 720], [285, 0], [1000, 0], [1000, 720]])
 
 
-def road_perspective_transform(img):
+def road_perspective_transform(img, inverse=False):
     """Performs the perspective transform specific to mapping a vehicle
     camera image into a bird's eye view.
     
     :param img: An image object
-    :return: An image object with the perspective transform applied"""
+    :param inverse: Boolean, whether to compute inverse transform 
+    :return: An image object with the perspective transform applied, either forward transform if param inverse is 
+             missing or False, or inverse transform if inverse param is set to True"""
 
-    return perspective_transform(img, ROAD_SRC, ROAD_DST)
+    transform_points_params = (ROAD_DST, ROAD_SRC) if inverse else (ROAD_SRC, ROAD_DST)
+    return perspective_transform(img, *transform_points_params)
 
 
 def perspective_transform(img, src, dst):
