@@ -14,8 +14,9 @@ or run the `detect_lines.py` file as a script.
 If you want to tinker with different input videos or modify output path, you need to modify the code, see the 
 `detect_lanes()` function and the ones it calls for details, it should be pretty straightforward.
 
-Note: if you want to do this without the starter kit, I am not aware of the dependencies. Refer to FIXME:add_link for details. 
+Note: if you want to do this without the starter kit, I am not aware of the dependencies. Refer to 
+[the starter kit repo](https://github.com/udacity/CarND-Term1-Starter-Kit) for details. 
 
 ## Written report
 
-To take a look at my writeup for the project, see FIXME:add_link. 
+To take a look at my writeup for the project, see [my writeup file](./writeup_tirila_jm.md)
