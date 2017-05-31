@@ -26,8 +26,14 @@ def rgb_to_hls(image):
     return cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
 
 
+def gray_to_rgb(image):
+    return cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+
+
 def scale_grayscale_to_255(image):
     return np.uint8(255 * image / np.max(image))
+
+
 
 
 

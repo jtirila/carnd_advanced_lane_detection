@@ -10,7 +10,8 @@ from carnd_advanced_lane_detection.image_transformations.colorspace_conversions 
 from carnd_advanced_lane_detection.image_transformations.perspective_transform import perspective_transform, \
     road_perspective_transform
 from carnd_advanced_lane_detection.masks.color_masks import saturation_mask
-from carnd_advanced_lane_detection.utils.visualize_images import one_by_two_plot, visualize_lanes_with_polynomials
+from carnd_advanced_lane_detection.utils.visualize_images import one_by_two_plot, visualize_lanes_with_polynomials, \
+    return_superimposed_polyfits
 from carnd_advanced_lane_detection.fit_functions.fit_polynomial import sliding_window_polyfit
 
 PERSPECTIVE_CALIBRATION_PATH = os.path.join(ROOT_DIR, 'calibration_images', 'perspective_calibration_image.png')
@@ -74,15 +75,21 @@ def display_single_saturation_masked_transformed_image_with_polyfit(image):
     left_fit, right_fit, out_img, nonzerox, nonzeroy, left_lane_inds, right_lane_inds = sliding_window_polyfit(masked)
     visualize_lanes_with_polynomials(masked, left_fit, right_fit, nonzerox, nonzeroy, left_lane_inds, right_lane_inds, out_img)
 
+
 def transform_and_saturation_mask_image(image):
     """FIXME: Again there is some redundancy"""
-    image = brg_to_rgb(image)
-    image = road_perspective_transform(image)
-    s_image = rgb_to_s_channel(image)
+    # image = brg_to_rgb(image)
+    perspective_image = road_perspective_transform(image)
+    s_image = rgb_to_s_channel(perspective_image)
     masked = saturation_mask(s_image, (150, 255))
-    scaled_masked = scale_grayscale_to_255(masked)
-
-    return cv2.cvtColor(scaled_masked, cv2.COLOR_GRAY2RGB)
+    left_fit, right_fit, out_img, nonzerox, nonzeroy, left_lane_inds, right_lane_inds = sliding_window_polyfit(masked)
+    if out_img is not None:
+        out_img = return_superimposed_polyfits(masked, left_fit, right_fit)
+        ret_img = road_perspective_transform(out_img, inverse=True)
+    else:
+        ret_img = cv2.cvtColor(masked, cv2.COLOR_GRAY2RGB)
+    result = cv2.addWeighted(image, 1, ret_img, 0.3, 0)
+    return result
 
 
 def display_transformed_frames():
@@ -148,10 +155,10 @@ if __name__ == "__main__":
     # load_video_capture_frames()
     # display()
 
-    img = cv2.imread(PERSPECTIVE_TEST_PATH)
+    # img = cv2.imread(PERSPECTIVE_TEST_PATH)
     # transf_img = perspective_transform_single_image(img)
     # one_by_two_plot(brg_to_rgb(img), brg_to_rgb(transf_img))
-    display_single_saturation_masked_transformed_image_with_polyfit(img)
+    # display_single_saturation_masked_transformed_image_with_polyfit(img)
 
     # display_transformed_frames()
 
@@ -163,9 +170,11 @@ if __name__ == "__main__":
     # plt.show()
 
 
-    # clip = VideoFileClip(os.path.join(ROOT_DIR, 'project_video.mp4'))
-    # transformed_clip = clip.fl_image(transform_and_saturation_mask_image)
-    # transformed_clip.write_videofile(TRANSFORMED_VIDEO_OUTPUT_PATH, audio=False)
+    clip = VideoFileClip(os.path.join(ROOT_DIR, 'project_video.mp4'))
+    transformed_clip = clip.fl_image(transform_and_saturation_mask_image)
+    transformed_clip.write_videofile(TRANSFORMED_VIDEO_OUTPUT_PATH, audio=False)
+
+
 
 
 

@@ -94,6 +94,10 @@ def sliding_window_polyfit(binary_warped):
     righty = nonzeroy[right_lane_inds]
 
     # Fit a second order polynomial to each
-    left_fit = np.polyfit(lefty, leftx, 2)
-    right_fit = np.polyfit(righty, rightx, 2)
-    return left_fit, right_fit, out_img, nonzerox, nonzeroy, left_lane_inds, right_lane_inds
+    try:
+        left_fit = np.polyfit(lefty, leftx, 2)
+        right_fit = np.polyfit(righty, rightx, 2)
+        return left_fit, right_fit, out_img, nonzerox, nonzeroy, left_lane_inds, right_lane_inds
+    except TypeError:
+        # TODO: "expected non-empty vector for x"
+        return None, None, None, None, None, None, None
