@@ -43,5 +43,3 @@ def dir_threshold(img, sobel_kernel=3, thresh=(0, np.pi / 2)):
     return binary_output
 
 
-def fixme_first_combined_threshold():
-    pass

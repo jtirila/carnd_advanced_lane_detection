@@ -10,6 +10,7 @@ from carnd_advanced_lane_detection.image_transformations.colorspace_conversions 
 from carnd_advanced_lane_detection.image_transformations.perspective_transform import perspective_transform, \
     road_perspective_transform
 from carnd_advanced_lane_detection.masks.color_masks import saturation_mask
+from carnd_advanced_lane_detection.masks.combined_masks import first_combined
 from carnd_advanced_lane_detection.utils.visualize_images import one_by_two_plot, visualize_lanes_with_polynomials, \
     return_superimposed_polyfits
 from carnd_advanced_lane_detection.fit_functions.fit_polynomial import sliding_window_polyfit
@@ -61,8 +62,9 @@ def display_single_saturation_masked_transformed_image(image):
     left_fit, right_fit, out_img, nonzerox, nonzeroy, left_lane_inds, right_lane_inds = sliding_window_polyfit(masked)
     visualize_lanes_with_polynomials(masked, left_fit, right_fit, nonzerox, nonzeroy, left_lane_inds, right_lane_inds, out_img)
     scaled_masked = scale_grayscale_to_255(masked)
-    one_by_two_plot(s_image, masked, 'gray', 'gray')
+    # one_by_two_plot(s_image, masked, 'gray', 'gray')
     cv2.imshow('masked', scaled_masked)
+    cv2.imwrite(os.path.join(ROOT_DIR, 'images', 'binary_masked.png'), scaled_masked)
     cv2.waitKey()
 
 
@@ -103,7 +105,7 @@ def display_transformed_frames():
 
         # rgb = brg_to_rgb(frame)
 
-        masked = saturation_mask_image(road_perspective_transform(frame))
+        masked = first_combined(road_perspective_transform(frame))
         scaled_masked = scale_grayscale_to_255(masked)
 
 
@@ -160,7 +162,7 @@ if __name__ == "__main__":
     # one_by_two_plot(brg_to_rgb(img), brg_to_rgb(transf_img))
     # display_single_saturation_masked_transformed_image_with_polyfit(img)
 
-    # display_transformed_frames()
+    display_transformed_frames()
 
     # display_single_saturation_masked_image(img)
     # display_single_saturation_masked_transformed_image(img)
@@ -170,9 +172,9 @@ if __name__ == "__main__":
     # plt.show()
 
 
-    clip = VideoFileClip(os.path.join(ROOT_DIR, 'project_video.mp4'))
-    transformed_clip = clip.fl_image(transform_and_saturation_mask_image)
-    transformed_clip.write_videofile(TRANSFORMED_VIDEO_OUTPUT_PATH, audio=False)
+    # clip = VideoFileClip(os.path.join(ROOT_DIR, 'project_video.mp4'))
+    # transformed_clip = clip.fl_image(transform_and_saturation_mask_image)
+    # transformed_clip.write_videofile(TRANSFORMED_VIDEO_OUTPUT_PATH, audio=False)
 
 
 

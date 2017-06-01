@@ -101,3 +101,7 @@ def sliding_window_polyfit(binary_warped):
     except TypeError:
         # TODO: "expected non-empty vector for x"
         return None, None, None, None, None, None, None
+
+
+def fit_polynomial(y_vals, x_vals, degree):
+    return np.polyfit(y_vals, x_vals, degree)
