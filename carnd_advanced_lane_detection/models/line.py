@@ -42,6 +42,13 @@ class Line():
 
 
 
+    def convert_warped_polynomial_to_original_perspective(self):
+        ploty = np.linspace(0, 719, num=720)  # to cover same y-range as image
+        y_eval = np.max(ploty)
+        coeffs = self.get_smoothed_coeffs()
+        xs = np.array([coeffs[0] * y**2 + coeffs[1] ** y + coeffs[2] for y in ploty])
+
+
     def calculate_curverad(self):
 
         ploty = np.linspace(0, 719, num=720)  # to cover same y-range as image
@@ -68,7 +75,7 @@ class Line():
         nonzero = binary_warped.nonzero()
         nonzeroy = np.array(nonzero[0])
         nonzerox = np.array(nonzero[1])
-        margin = 70
+        margin = 37
         left_lane_inds = (
         (nonzerox > (left_fit[0] * (nonzeroy ** 2) + left_fit[1] * nonzeroy + left_fit[2] - margin)) & (
         nonzerox < (left_fit[0] * (nonzeroy ** 2) + left_fit[1] * nonzeroy + left_fit[2] + margin)))
