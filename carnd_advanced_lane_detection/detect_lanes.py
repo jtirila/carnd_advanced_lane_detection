@@ -1,6 +1,7 @@
 import os
 import sys
 import cv2
+import numpy as np
 
 from carnd_advanced_lane_detection import ROOT_DIR
 from carnd_advanced_lane_detection.preparations.calibrate_camera import calibrate_camera
@@ -16,6 +17,8 @@ from carnd_advanced_lane_detection.models.line import Line
 from moviepy.editor import VideoFileClip
 from carnd_advanced_lane_detection.utils.visualize_images import one_by_two_plot, return_superimposed_polyfits
 
+from carnd_advanced_lane_detection.models.line import XM_PER_PIX
+
 _TRANSFORMED_VIDEO_OUTPUT_PATH = os.path.join(ROOT_DIR, 'transformed.mp4')
 
 TEST = False
@@ -24,7 +27,17 @@ COUNTER = 0
 
 _PROJECT_VIDEO_PATH = os.path.join(ROOT_DIR, 'project_video.mp4') \
     if not TEST \
-    else os.path.join(ROOT_DIR, 'test_videos', 'beginning_5_sec.mp4')
+    else os.path.join(ROOT_DIR, 'test_videos', 'middle_5_sec.mp4')
+
+
+def _convert_color_image(img):
+    img_yuv = cv2.cvtColor(img, cv2.COLOR_RGB2YUV)
+
+    # equalize the histogram of the Y channel
+    img_yuv[:, :, 0] = cv2.equalizeHist(img_yuv[:, :, 0])
+
+    # convert the YUV image back to RGB format
+    return cv2.cvtColor(img_yuv, cv2.COLOR_YUV2RGB)
 
 
 def _process_image(image, mtx, dist, left_line, right_line):
@@ -46,23 +59,39 @@ def _process_image(image, mtx, dist, left_line, right_line):
     :return: an rgb image containing lane line visualizations"""
 
     udist = undistort_image(image, mtx, dist)
-    perspective_image = road_perspective_transform(udist)
+    enhanced = _convert_color_image(udist)
+    perspective_image = road_perspective_transform(enhanced)
     # masked = first_combined(perspective_image)
 
     s_image = rgb_to_s_channel(perspective_image)
-    masked = saturation_mask(s_image, (200, 255))
-    left, right, nonzerox, nonzeroy, out_img = Line.find_lane_lines(masked)
+    masked = saturation_mask(s_image, (253, 255))
+    if left_line.previous_fit_succeeded() and right_line.previous_fit_succeeded():
+        left, right, nonzerox, nonzeroy, out_img = Line.detect_line_pixels_based_on_previous_fit(masked, left_line.get_smoothed_coeffs(), right_line.get_smoothed_coeffs())
+    else:
+        print("Need to start from scratch")
+        left, right, nonzerox, nonzeroy, out_img = Line.find_lane_lines(masked)
     if out_img is not None:
         left_line.fit_polynomial(left.y, left.x)
         right_line.fit_polynomial(right.y, right.x)
     else:
-        # TODO: lane line pixel identification failed, need to proceed to next frame just using data from previous iteration?
+        print("lane line pixel identification failed, need to just proceed to next frame.")
         pass
 
-    out_img = return_superimposed_polyfits(masked, left_line.get_smoothed_coeffs(), right_line.get_smoothed_coeffs())
+    out_img = return_superimposed_polyfits(masked, left_line, right_line)
     ret_img = road_perspective_transform(out_img, inverse=True)
-    result = cv2.addWeighted(image, 1, ret_img, 0.3, 0)
+    result = cv2.addWeighted(udist, 1, ret_img, 0.3, 0)
+    avg_curverad = 0.5 * (left_line.calculate_curverad() + left_line.calculate_curverad())
+    offset = _fixme_compute_camera_offset(left_line, right_line)
+    offset_dir = 'left' if offset > 0 else 'right'
+    cv2.putText(result, "Curvature: {:.2f} m".format(avg_curverad), (100, 100), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), 2)
+    cv2.putText(result, "Camera offset from lane center: {:.2f} m {}".format(
+        np.absolute(offset),
+        offset_dir), (100, 150), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), 2)
     return result
+
+
+def _fixme_compute_camera_offset(left_line, right_line):
+    return XM_PER_PIX * (0.5 * (left_line.compute_line_position_at_bottom() + right_line.compute_line_position_at_bottom()) - 640)
 
 
 def process_video(video_path=_PROJECT_VIDEO_PATH, mtx=None, dist=None, output_path=_TRANSFORMED_VIDEO_OUTPUT_PATH):

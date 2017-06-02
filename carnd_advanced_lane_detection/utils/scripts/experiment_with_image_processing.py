@@ -6,7 +6,7 @@ from moviepy.editor import VideoFileClip
 
 from carnd_advanced_lane_detection import ROOT_DIR
 from carnd_advanced_lane_detection.image_transformations.colorspace_conversions import brg_to_rgb, rgb_to_s_channel, \
-    scale_grayscale_to_255
+    scale_grayscale_to_255, gray_to_rgb
 from carnd_advanced_lane_detection.image_transformations.perspective_transform import perspective_transform, \
     road_perspective_transform
 from carnd_advanced_lane_detection.masks.color_masks import saturation_mask
@@ -78,12 +78,24 @@ def display_single_saturation_masked_transformed_image_with_polyfit(image):
     visualize_lanes_with_polynomials(masked, left_fit, right_fit, nonzerox, nonzeroy, left_lane_inds, right_lane_inds, out_img)
 
 
+def _convert_color_image(img):
+    img_yuv = cv2.cvtColor(img, cv2.COLOR_RGB2YUV)
+
+    # equalize the histogram of the Y channel
+    img_yuv[:, :, 0] = cv2.equalizeHist(img_yuv[:, :, 0])
+
+    # convert the YUV image back to RGB format
+    return cv2.cvtColor(img_yuv, cv2.COLOR_YUV2RGB)
+
+
 def transform_and_saturation_mask_image(image):
     """FIXME: Again there is some redundancy"""
     # image = brg_to_rgb(image)
+    image = _convert_color_image(image)
     perspective_image = road_perspective_transform(image)
     s_image = rgb_to_s_channel(perspective_image)
-    masked = saturation_mask(s_image, (150, 255))
+    equalized = cv2.equalizeHist(s_image)
+    masked = saturation_mask(equalized, (254, 255))
     left_fit, right_fit, out_img, nonzerox, nonzeroy, left_lane_inds, right_lane_inds = sliding_window_polyfit(masked)
     if out_img is not None:
         out_img = return_superimposed_polyfits(masked, left_fit, right_fit)
@@ -105,19 +117,46 @@ def display_transformed_frames():
 
         # rgb = brg_to_rgb(frame)
 
-        masked = first_combined(road_perspective_transform(frame))
-        scaled_masked = scale_grayscale_to_255(masked)
+
+        frame = _convert_color_image(frame)
+        frame = road_perspective_transform(frame)
+        s_image = rgb_to_s_channel(frame)
+        equalized = cv2.equalizeHist(s_image)
+        masked = saturation_mask(equalized, (253, 255))
+        masked = scale_grayscale_to_255(masked)
+        # masked = first_combined(frame)
+        scaled_masked = scale_grayscale_to_255(s_image)
 
 
         # inversed = road_perspective_transform(scaled_masked, inverse=True)
 
-        cv2.imshow('frame', scaled_masked)
+        scaled_masked = gray_to_rgb(masked)
+        cv2.imshow('frame', masked)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
     cap.release()
     cv2.destroyAllWindows()
 
+def display_partly_transformed_frames():
+    cap = cv2.VideoCapture(os.path.join(ROOT_DIR, 'project_video.mp4'))
+
+    frame_count = 1
+    while cap.isOpened():
+        print("Frame number {}".format(frame_count))
+        frame_count += 1
+        ret, frame = cap.read()
+
+        # rgb = brg_to_rgb(frame)
+
+        frame = transform_and_saturation_mask_image(frame)
+
+        cv2.imshow('frame', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
 
 def load_video_capture_frames():
     cap = cv2.VideoCapture(os.path.join(ROOT_DIR, 'project_video.mp4'))
@@ -163,6 +202,7 @@ if __name__ == "__main__":
     # display_single_saturation_masked_transformed_image_with_polyfit(img)
 
     display_transformed_frames()
+    # display_partly_transformed_frames()
 
     # display_single_saturation_masked_image(img)
     # display_single_saturation_masked_transformed_image(img)

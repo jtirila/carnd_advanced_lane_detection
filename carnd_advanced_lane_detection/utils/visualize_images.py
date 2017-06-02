@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from carnd_advanced_lane_detection.image_transformations.colorspace_conversions import brg_to_rgb
 import cv2
 
 
@@ -44,9 +45,18 @@ def visualize_lanes_with_polynomials(binary_warped, left_fit, right_fit, nonzero
     plt.show()
 
 
-def return_superimposed_polyfits(warped, left_fit, right_fit):
+def open_visualize_single_image(path):
+    image = cv2.imread(path)
+    plt.imshow(brg_to_rgb(image))
+    plt.show()
+
+
+def return_superimposed_polyfits(warped, left_line, right_line):
     warp_zero = np.zeros_like(warped).astype(np.uint8)
     color_warp = np.dstack((warp_zero, warp_zero, warp_zero))
+
+    left_fit = left_line.get_smoothed_coeffs()
+    right_fit = right_line.get_smoothed_coeffs()
 
     try:
         ploty = np.linspace(0, warped.shape[0] - 1, warped.shape[0])
@@ -61,6 +71,8 @@ def return_superimposed_polyfits(warped, left_fit, right_fit):
 
         # Draw the lane onto the warped blank image
         cv2.fillPoly(color_warp, np.int_([pts]), (0, 255, 0))
+
+
     except IndexError:
         # FIXME something went wrong with the polynomial fits, need to account for this somehow
         pass

@@ -3,12 +3,14 @@ import cv2
 from collections import namedtuple
 from collections import deque
 
+YM_PER_PIX = 30 / 720  # meters per pixel in y dimension
+XM_PER_PIX = 3.7 / 700  # meters per pixel in x dimension
 
 PointCollections = namedtuple("point_collections", ['x', 'y', 'lane_inds'])
 
 # Define a class to keep track of the characteristics of line detection
 class Line():
-    WEIGHTS = np.array([1/2, 1/3, 1/4, 1/5, 1/6, 1/7, 1/8, 1/9, 1/10, 1/11])
+    WEIGHTS = np.array([1/2, 1/2, 1/2, 1/3, 1/4, 1/4, 1/5, 1/5, 1/6, 1/6, 1/7, 1/7, 1/8, 1/10, 1/10])
     # TODO: this is a copy-paste from lecture material.
     def __init__(self):
         # was the line detected in the last iteration?
@@ -19,7 +21,7 @@ class Line():
         self.recent_xfitted = []
         # average x values of the fitted line over the last n iterations
         self.bestx = None
-        self.recent_coeffs = np.array(np.empty((10,), dtype=object))
+        self.recent_coeffs = np.array(np.empty((15,), dtype=object))
         # polynomial coefficients averaged over the last n iterations
         self.best_fit = None
         # polynomial coefficients for the most recent fit
@@ -39,6 +41,52 @@ class Line():
         self.current_left_lane_inds = None
 
 
+
+    def calculate_curverad(self):
+
+        ploty = np.linspace(0, 719, num=720)  # to cover same y-range as image
+        y_eval = np.max(ploty)
+        # Define conversions in x and y from pixels space to meters
+        coeffs = self.get_smoothed_coeffs()
+        xs = np.array([coeffs[0] * y**2 + coeffs[1] ** y + coeffs[2] for y in ploty])
+        # xs = np.array([200 + (y ** 2) * self.get_smoothed_coeffs() + np.random.randint(-50, high=51)
+        #                   for y in ploty])
+
+        # Fit new polynomials to x,y in world space
+        fit_cr = np.polyfit(ploty * YM_PER_PIX, xs * XM_PER_PIX, 2)
+        # Calculate the new radii of curvature
+        curverad = ((1 + (2 * fit_cr[0] * y_eval * YM_PER_PIX + fit_cr[1]) ** 2) ** 1.5) / np.absolute(
+            2 * fit_cr[0])
+        # print("Curvature is {} m".format(curverad))
+        return curverad
+
+    @staticmethod
+    def detect_line_pixels_based_on_previous_fit(binary_warped, left_fit, right_fit):
+        # Assume you now have a new warped binary image
+        # from the next frame of video (also called "binary_warped")
+        # It's now much easier to find line pixels!
+        nonzero = binary_warped.nonzero()
+        nonzeroy = np.array(nonzero[0])
+        nonzerox = np.array(nonzero[1])
+        margin = 70
+        left_lane_inds = (
+        (nonzerox > (left_fit[0] * (nonzeroy ** 2) + left_fit[1] * nonzeroy + left_fit[2] - margin)) & (
+        nonzerox < (left_fit[0] * (nonzeroy ** 2) + left_fit[1] * nonzeroy + left_fit[2] + margin)))
+        right_lane_inds = (
+        (nonzerox > (right_fit[0] * (nonzeroy ** 2) + right_fit[1] * nonzeroy + right_fit[2] - margin)) & (
+        nonzerox < (right_fit[0] * (nonzeroy ** 2) + right_fit[1] * nonzeroy + right_fit[2] + margin)))
+
+        # Again, extract left and right line pixel positions
+        leftx = nonzerox[left_lane_inds]
+        lefty = nonzeroy[left_lane_inds]
+        rightx = nonzerox[right_lane_inds]
+        righty = nonzeroy[right_lane_inds]
+
+        left_vals = PointCollections(x=leftx, y=lefty, lane_inds=left_lane_inds)
+        right_vals = PointCollections(x=rightx, y=righty, lane_inds=right_lane_inds)
+        out_img = np.dstack((binary_warped, binary_warped, binary_warped)) * 255
+        return left_vals, right_vals, nonzerox, nonzeroy, out_img
+
     def _detect_line_pixels(self, img):
         """TODO: Using the information from previous rounds stored in the member variables, detect the lane line 
         pixels from the input img
@@ -47,12 +95,13 @@ class Line():
         :return: Nothing, just update member variables"""
         pass
 
-    def process_new_image(self):
-        """"""
-        # Detect lane line pixels
-        # Fit polynomial
-        # What else?
-        pass
+    def compute_line_position_at_bottom(self):
+        coeffs = self.get_smoothed_coeffs()
+        pos = coeffs[0] ** 720**2 + coeffs[1] * 720 + coeffs[2]
+        return pos
+
+    def previous_fit_succeeded(self):
+        return self.recent_coeffs[0] is not None
 
     def fit_polynomial(self, y, x, degree=2):
         # TODO: fit polynomial
