@@ -16,8 +16,9 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 
-[image1]: ./examples/undistort_output.png "Undistorted"
-[image2]: ./test_images/test1.jpg "Road Transformed"
+[perspective_calibration_image]: ./calibration_images/perspective_calibration_image.png "Perspective calibration image"
+[undistorted_calibration_image]: ./calibration_images/test1.jpg "Undistorted calibration image"
+[perspective_transformed_image]: ./calibration_images/test1.jpg "Undistorted calibration image"
 [image3]: ./examples/binary_combo_example.jpg "Binary Example"
 [image4]: ./examples/warped_straight_lines.jpg "Warp Example"
 [image5]: ./examples/color_fit_lines.jpg "Fit Visual"
@@ -72,7 +73,7 @@ I then used the output `objpoints` and `imgpoints` to compute the camera calibra
 using the `cv2.calibrateCamera()` function.  I applied this distortion correction to the test image using 
 the `cv2.undistort()` function and obtained this result: 
 
-![alt text][image1]
+![Undistorted calibration image][undistorted_calibration_image]
 
 ### Single image processing 
 
@@ -81,6 +82,17 @@ has already been distortion corrected. In the actual video processing pipeline, 
 care of as the first step before proceeding to the steps below. 
 
 #### Perspective transform 
+
+For the perspective transform, I simply chose the source manually by visual inspection from a suitable calibration 
+image, presented below. 
+
+![Perspective calibration image][perspective_calibration_image]
+
+The heavy lifting of performing the perspective transform was carried out using OpenCV's `getPerspectiveTransform` 
+as per the lecture examples. Here is an example of applying the transform to the frame above:  
+
+![Perspective transformed image][perspective_transformed_image]
+
 
 ##### The source and destination rectangles
 ##### Applying the transform
