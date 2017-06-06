@@ -19,6 +19,7 @@ The goals / steps of this project are the following:
 [perspective_calibration_image]: ./calibration_images/perspective_calibration_image.png "Perspective calibration image"
 [undistorted_calibration_image]: ./calibration_images/undistorted_calibration_image.png "Undistorted calibration image"
 [perspective_transformed_image]: ./calibration_images/perspective_transformed_image.png "Undistorted calibration image"
+[equalized_s_channel_image]: ./calibration_images/saturation_normalization.png "Equalized s channel image"
 [image3]: ./examples/binary_combo_example.jpg "Binary Example"
 [image4]: ./examples/warped_straight_lines.jpg "Warp Example"
 [image5]: ./examples/color_fit_lines.jpg "Fit Visual"
@@ -89,92 +90,127 @@ image, presented below.
 ![Perspective calibration image][perspective_calibration_image]
 
 The heavy lifting of performing the perspective transform was carried out using OpenCV's `getPerspectiveTransform` 
-as per the lecture examples. Here is an example of applying the transform to the frame above:  
+as per the lecture examples. All the perspective transform related code can be found in the 
+`image_transformations/perspective_transform.py` file. Much of the code is just a wrapper around 
+ OpenCV functions with some convenience default values. 
+
+Here is an example of applying the transform to the frame above:  
 
 ![Perspective transformed image][perspective_transformed_image]
 
-
 ##### The source and destination rectangles
+
+The source and destination rectangles are defined by
+```python
+ROAD_SRC = np.float32([[250, 720], [589, 463], [701, 463], [1030, 720]])
+ROAD_DST = np.float32([[250, 720], [250, 0], [1036, 0], [1036, 720]])
+```
+
 ##### Applying the transform
+
+The actual transform is carried out by OpenCV, through the `warpPerspective` function along with 
+`getPerspectiveTransform`. This was all covered in the lecture notes so not repeating here. 
+
 ##### The inverse transform
 
-#### Extracting the s channel
+As the detected lines need to be mapped back to the camera perspective, the code also provides a way to 
+easily apply the inverse perspective transform. This is done by just appending the `inverse=True` parameter to 
+the `road_perspective_transform` function. 
+
 
 #### Applying a mask to only include lane pixels
 
-#### Identifying left and right lane pixels
+After experimenting with different kinds of mask combinations, I ended up using a rather simple mask for this project: 
+The mask consist of an aggregate of a saturation mask and gradient magnitude mask. 
 
-#### Fitting the polynomial
-##### Computing the curvature
+
+
+#### Extracting the s channel
+
+For the saturation mask, the s channel extraction war performed exactly as per the lecture notes, first performing a 
+conversion to the HLS color space and there just selecting the S channel. 
+
+Before applying the saturation mask, I also experimented with various tricks related to normalizing the s channel 
+image before masking. For example, I tried using the 
+`CLAHE` (for Contrast Limited Adaptive Histogram Equalization) class of OpenCV to have more uniform s value 
+spread to the 0 - 255 interval, yet keeping contrast. and hence to be able to choose a more consistent threshold value.
+
+To illustrate the effect of this normalization, here is a figure containing a non-equalized s_channel image and its  
+histogram equalized counterpart: 
+
+
+![Equalized s channel image][equalized_s_channel_image]
+
+Even though the result may not seem much like an improvement, the main benefit is that after the normalization 
+throughout the video, the saturation is distributed much more evenly across frames and I was able to choose a much 
+higher and consistent saturation threshold than would otherwise have been possible. 
+
+The final implementation can be seen at `masks/combined.py`, the function named `submission_combined`.
+
+FIXME: fill in final version of code
+
+#### Identifying left and right lane pixels, Fitting the polynomial and Computing the curvature
+
+For the left and right lane pixels and the subsequent polynomial fitting and curvature computation  
+I basically used the histogram based moving window search directly from the lecture instructions. 
+
+The lane pixel detection related code can be found at `models/line.py`. There are a couple of static methods,
+not implemented as instance mainly due to performance reasons: it is more efficient to iterate through an image
+for both a left and right line simultaneously, so this is not performed per instance (left & right) but rather 
+in one pass. 
+
+As for the tracking part, I used a scheme simplified a bit from the project hints. The processing could be more 
+sophisticated, but I found out this was enough for my needs. So the process is as follows: 
+
+ * Initially, track the lane lines using the histogram and moving window method window from the lecture
+ * Fit a polynomial
+ * Subsequently, if there has been a recent polynomial fit, just search for new line pixels around the previous 
+   polynomial curve
+ * For any given frame, compute the polynomial coefficients as a weighted average of the 15 latest polynomial fits.   
+   The weighting scheme makes sure that recent fits are given more emphasis, but should there be frames with missing 
+   (raw) polynomials, some kind of an estimate can still be computed as long as not all the previous 15 observations
+   have not been faulty. In reality, with this masking and video processing, all the 15 previous sets of 
+   coefficients are systematically there, however. 
+ 
+ 
+ The code that performs the weighted averaging and shifting the recent coeffs array is reproduced here: 
+ 
+ ```python
+    WEIGHTS = np.array([1/2, 1/2, 1/2, 1/3, 1/4, 1/4, 1/5, 1/5, 1/6, 1/6, 1/7, 1/7, 1/8, 1/10, 1/10])
+    ...
+    def _append_last_coefficients(self, coeffs):
+        self.recent_coeffs[-1] = coeffs
+        self.recent_coeffs = np.roll(self.recent_coeffs, 1)
+ 
+    ... 
+    def get_smoothed_coeffs(self):
+    
+        idx = self.recent_coeffs != np.array(None)
+        real_weights = Line.WEIGHTS[idx]
+        scaled_real_weights = real_weights / np.sum(real_weights)
+        return np.sum(self.recent_coeffs[idx] * scaled_real_weights, axis=0)
+
+
+```
+ 
+ No further tracking of the coefficients is performed. I figured the averaging would also smooth the curvature and 
+ camera position computations enough. 
 
 #### Visualizing the fitted polynomials and the lane area between them
 
+For the line visualization part, I pretty much used the code as it was provided in the lectures. 
+The relevant bits can be found at `utils/visualize_images.py`, the `return_superimposed_polyfits` function is the one 
+that adds the green lane area to the image. 
+
 ### Putting it all together: 
 
-To demonstrate this step, I will describe how I apply the distortion correction to one of the test images like this one:
-![alt text][image2]
+#### Pipeline (video)
 
-#### 2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
-
-I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines # through # in `another_file.py`).  Here's an example of my output for this step.  (note: this is not actually from one of the test images)
-
-![alt text][image3]
-
-#### 3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
-
-The code for my perspective transform includes a function called `warper()`, which appears in lines 1 through 8 in the file `example.py` (output_images/examples/example.py) (or, for example, in the 3rd code cell of the IPython notebook).  The `warper()` function takes as inputs an image (`img`), as well as source (`src`) and destination (`dst`) points.  I chose the hardcode the source and destination points in the following manner:
-
-```python
-src = np.float32(
-    [[(img_size[0] / 2) - 55, img_size[1] / 2 + 100],
-    [((img_size[0] / 6) - 10), img_size[1]],
-    [(img_size[0] * 5 / 6) + 60, img_size[1]],
-    [(img_size[0] / 2 + 55), img_size[1] / 2 + 100]])
-dst = np.float32(
-    [[(img_size[0] / 4), 0],
-    [(img_size[0] / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), 0]])
-```
-
-This resulted in the following source and destination points:
-
-| Source        | Destination   | 
-|:-------------:|:-------------:| 
-| 585, 460      | 320, 0        | 
-| 203, 720      | 320, 720      |
-| 1127, 720     | 960, 720      |
-| 695, 460      | 960, 0        |
-
-I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
-
-![alt text][image4]
-
-#### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
-
-Then I did some other stuff and fit my lane lines with a 2nd order polynomial kinda like this:
-
-![alt text][image5]
-
-#### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
-
-I did this in lines # through # in my code in `my_other_file.py`
-
-#### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
-
-I implemented this step in lines # through # in my code in `yet_another_file.py` in the function `map_lane()`.  Here is an example of my result on a test image:
-
-![alt text][image6]
-
----
-
-### Pipeline (video)
-
-The viedo processing pipeline can be found in the `detect_lanes.py` file. Besides the parts of the file already 
+The video processing pipeline can be found in the `detect_lanes.py` file. Besides the parts of the file already 
 discussed, the main workhorse for the actual video processing part are the `detect_lanes` and `_process_video` 
 functions.
 
-For the video processing, as seen in the `_process_video` function (lines FIXME), I used the `moviepy` library and 
+For the video processing, as seen in the `process_video` function (lines FIXME), I used the `moviepy` library and 
 its `moviepy.editor.VideoFileClip` class. 
 
 Reading the video using this method is rather straightworward, as is passing each invidivual frame to be processed 
@@ -208,12 +244,19 @@ Here's a [link to my video result](./project_video.mp4)
 
 ### Discussion
 
-FIXME: 
-```
-Briefly discuss any problems / issues you faced in your implementation of this project.  
-Where will your pipeline likely fail?  What could you do to make it more robust?
+The project was interesting and some of the work I performed on color space normalizations provided 
+me with a lot of insight into various normalization techniques. 
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, 
-where the pipeline might fail and how I might improve it if I were going to pursue this 
-project further.  
-```
+What I need work a little bit more on is various gradient masking techniques. Trying to combine them with my 
+saturation masks was not very successful, and I was not quite able to obtain a good grasp of what kinds of 
+gradient based techniques to use and when. This is something were my pipeline could likely 
+falter: when the image saturation information is insufficient to reliably detect the lane lines, 
+gradient based aspects of the mask would probably be valuable, and I did not quite nail it yet. 
+
+Also I am aware that my line tracking is kind of rudimentary and I could have done more to 
+detect anomalous observations using the techniques suggested in the project instructions. However,  
+I felt my code was robust enough for this particular video so no further fine tuning was needed. 
+
+Another point is that I needed to go on with the submission even though I did not have time yet to 
+organize some of the code the way I needed. Also, function documentation quality varies a lot, 
+some parts of the code very well documented and others practically undocumented. 

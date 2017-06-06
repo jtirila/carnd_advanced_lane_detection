@@ -41,3 +41,12 @@ def scale_grayscale_to_255(image):
 def rgb_to_s_channel(image):
     return cv2.cvtColor(image, cv2.COLOR_RGB2HLS)[:, :, 2]
 
+
+def normalize_brightness(img):
+    img_yuv = cv2.cvtColor(img, cv2.COLOR_RGB2YUV)
+
+    # equalize the histogram of the Y channel
+    img_yuv[:, :, 0] = cv2.equalizeHist(img_yuv[:, :, 0])
+
+    # convert the YUV image back to RGB format
+    return cv2.cvtColor(img_yuv, cv2.COLOR_YUV2RGB)

@@ -1,23 +1,22 @@
 import os
 import sys
+
 import cv2
 import numpy as np
+from moviepy.editor import VideoFileClip
 
 from carnd_advanced_lane_detection import ROOT_DIR
-from carnd_advanced_lane_detection.preparations.calibrate_camera import calibrate_camera
-from carnd_advanced_lane_detection.preparations.read_calibration_images import read_calibration_images
-from carnd_advanced_lane_detection.image_transformations.colorspace_conversions import mass_rgb_to_grayscale, \
-    gray_to_rgb, scale_grayscale_to_255, rgb_to_s_channel
+from carnd_advanced_lane_detection.image_transformations.colorspace_conversions import rgb_to_s_channel, \
+    normalize_brightness
 from carnd_advanced_lane_detection.image_transformations.perspective_transform import road_perspective_transform
 from carnd_advanced_lane_detection.image_transformations.undistort_image import undistort_image
-from carnd_advanced_lane_detection.masks.combined_masks import first_combined
 from carnd_advanced_lane_detection.masks.color_masks import saturation_mask
-from carnd_advanced_lane_detection.fit_functions.fit_polynomial import sliding_window_polyfit
+from carnd_advanced_lane_detection.masks.combined_masks import submission_combined
 from carnd_advanced_lane_detection.models.line import Line
-from moviepy.editor import VideoFileClip
-from carnd_advanced_lane_detection.utils.visualize_images import one_by_two_plot, return_superimposed_polyfits
-
 from carnd_advanced_lane_detection.models.line import XM_PER_PIX
+from carnd_advanced_lane_detection.preparations.calibrate_camera import calibrate_camera
+from carnd_advanced_lane_detection.preparations.read_calibration_images import read_calibration_images
+from carnd_advanced_lane_detection.utils.visualize_images import return_superimposed_polyfits
 
 _TRANSFORMED_VIDEO_OUTPUT_PATH = os.path.join(ROOT_DIR, 'transformed.mp4')
 
@@ -28,16 +27,6 @@ COUNTER = 0
 _PROJECT_VIDEO_PATH = os.path.join(ROOT_DIR, 'project_video.mp4') \
     if not TEST \
     else os.path.join(ROOT_DIR, 'test_videos', 'middle_5_sec.mp4')
-
-
-def _convert_color_image(img):
-    img_yuv = cv2.cvtColor(img, cv2.COLOR_RGB2YUV)
-
-    # equalize the histogram of the Y channel
-    img_yuv[:, :, 0] = cv2.equalizeHist(img_yuv[:, :, 0])
-
-    # convert the YUV image back to RGB format
-    return cv2.cvtColor(img_yuv, cv2.COLOR_YUV2RGB)
 
 
 def _process_image(image, mtx, dist, left_line, right_line):
@@ -59,12 +48,24 @@ def _process_image(image, mtx, dist, left_line, right_line):
     :return: an rgb image containing lane line visualizations"""
 
     udist = undistort_image(image, mtx, dist)
-    enhanced = _convert_color_image(udist)
+    enhanced = normalize_brightness(udist)
     perspective_image = road_perspective_transform(enhanced)
     # masked = first_combined(perspective_image)
 
     s_image = rgb_to_s_channel(perspective_image)
-    masked = saturation_mask(s_image, (253, 255))
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    equalized = clahe.apply(s_image)
+    # equalized = cv2.equalizeHist(s_image)
+    # masked = first_combined(frame)
+    # masked = dir_threshold(masked, 5, (0.76, 0.84), need_to_gray=False)
+    masked = saturation_mask(equalized, (254, 255))
+    # masked = scale_grayscale_to_255(masked)
+    # masked = first_combined(frame)
+    # scaled_masked = scale_grayscale_to_255(masked)
+
+    # s_image = rgb_to_s_channel(perspective_image)
+    # normalized_s_image = cv2.equalizeHist(s_image)
+    # masked = saturation_mask(normalized_s_image, (253, 255))
     if left_line.previous_fit_succeeded() and right_line.previous_fit_succeeded():
         left, right, nonzerox, nonzeroy, out_img = Line.detect_line_pixels_based_on_previous_fit(masked, left_line.get_smoothed_coeffs(), right_line.get_smoothed_coeffs())
     else:

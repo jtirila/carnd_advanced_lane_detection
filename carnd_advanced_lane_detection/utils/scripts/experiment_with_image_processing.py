@@ -11,7 +11,7 @@ from carnd_advanced_lane_detection.image_transformations.perspective_transform i
     road_perspective_transform
 from carnd_advanced_lane_detection.masks.color_masks import saturation_mask
 from carnd_advanced_lane_detection.masks.gradient_masks import mag_thresh, dir_threshold
-from carnd_advanced_lane_detection.masks.combined_masks import first_combined
+from carnd_advanced_lane_detection.masks.combined_masks import submission_combined
 from carnd_advanced_lane_detection.utils.visualize_images import one_by_two_plot, visualize_lanes_with_polynomials, \
     return_superimposed_polyfits
 from carnd_advanced_lane_detection.fit_functions.fit_polynomial import sliding_window_polyfit
@@ -121,11 +121,13 @@ def display_transformed_frames():
 
         frame = _convert_color_image(frame)
         frame = road_perspective_transform(frame)
-        # s_image = rgb_to_s_channel(frame)
+        s_image = rgb_to_s_channel(frame)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        equalized = clahe.apply(s_image)
         # equalized = cv2.equalizeHist(s_image)
-        masked = first_combined(frame)
+        # masked = first_combined(frame)
         # masked = dir_threshold(masked, 5, (0.76, 0.84), need_to_gray=False)
-        # masked = saturation_mask(equalized, (253, 255))
+        masked = saturation_mask(equalized, (253, 255))
         # masked = scale_grayscale_to_255(masked)
         # masked = first_combined(frame)
         scaled_masked = scale_grayscale_to_255(masked)
