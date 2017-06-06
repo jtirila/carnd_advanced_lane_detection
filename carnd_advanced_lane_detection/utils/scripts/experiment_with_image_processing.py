@@ -10,6 +10,7 @@ from carnd_advanced_lane_detection.image_transformations.colorspace_conversions 
 from carnd_advanced_lane_detection.image_transformations.perspective_transform import perspective_transform, \
     road_perspective_transform
 from carnd_advanced_lane_detection.masks.color_masks import saturation_mask
+from carnd_advanced_lane_detection.masks.gradient_masks import mag_thresh, dir_threshold
 from carnd_advanced_lane_detection.masks.combined_masks import first_combined
 from carnd_advanced_lane_detection.utils.visualize_images import one_by_two_plot, visualize_lanes_with_polynomials, \
     return_superimposed_polyfits
@@ -120,18 +121,20 @@ def display_transformed_frames():
 
         frame = _convert_color_image(frame)
         frame = road_perspective_transform(frame)
-        s_image = rgb_to_s_channel(frame)
-        equalized = cv2.equalizeHist(s_image)
-        masked = saturation_mask(equalized, (253, 255))
-        masked = scale_grayscale_to_255(masked)
+        # s_image = rgb_to_s_channel(frame)
+        # equalized = cv2.equalizeHist(s_image)
+        masked = mag_thresh(frame, 13, (100, 255))
+        masked = dir_threshold(masked, 5, (0.76, 0.84), need_to_gray=False)
+        # masked = saturation_mask(equalized, (253, 255))
+        # masked = scale_grayscale_to_255(masked)
         # masked = first_combined(frame)
-        scaled_masked = scale_grayscale_to_255(s_image)
+        scaled_masked = scale_grayscale_to_255(masked)
 
 
         # inversed = road_perspective_transform(scaled_masked, inverse=True)
 
-        scaled_masked = gray_to_rgb(masked)
-        cv2.imshow('frame', masked)
+        scaled_masked = gray_to_rgb(scaled_masked)
+        cv2.imshow('frame', scaled_masked)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 

@@ -29,8 +29,11 @@ def _sobel(image, orient='x', ksize=3):
     return cv2.Sobel(image, cv2.CV_64F, *orient_tuple, ksize=ksize)
 
 
-def dir_threshold(img, sobel_kernel=3, thresh=(0, np.pi / 2)):
-    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+def dir_threshold(img, sobel_kernel=3, thresh=(0, np.pi / 2), need_to_gray=True):
+    if need_to_gray:
+        gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    else:
+        gray = np.copy(img)
     sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
     sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=sobel_kernel)
 
