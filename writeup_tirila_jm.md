@@ -17,8 +17,8 @@ The goals / steps of this project are the following:
 [//]: # (Image References)
 
 [perspective_calibration_image]: ./calibration_images/perspective_calibration_image.png "Perspective calibration image"
-[undistorted_calibration_image]: ./calibration_images/test1.jpg "Undistorted calibration image"
-[perspective_transformed_image]: ./calibration_images/test1.jpg "Undistorted calibration image"
+[undistorted_calibration_image]: ./calibration_images/undistorted_calibration_image.png "Undistorted calibration image"
+[perspective_transformed_image]: ./calibration_images/perspective_transformed_image.png "Undistorted calibration image"
 [image3]: ./examples/binary_combo_example.jpg "Binary Example"
 [image4]: ./examples/warped_straight_lines.jpg "Warp Example"
 [image5]: ./examples/color_fit_lines.jpg "Fit Visual"
