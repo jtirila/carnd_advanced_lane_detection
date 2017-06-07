@@ -21,6 +21,7 @@ The goals / steps of this project are the following:
 [perspective_transformed_image]: ./calibration_images/perspective_transformed_image.png "Undistorted calibration image"
 [non_bright_norm_threshs]: ./calibration_images/non_brightess_normalized_different_thresholds.png "Non brightness normalized, different thresholds"
 [equalized_s_channel_image]: ./calibration_images/saturation_normalization.png "Equalized s channel image"
+[brightness_normalization]: ./calibration_images/brightness_normalization.png "Brightness normalization"
 [image3]: ./examples/binary_combo_example.jpg "Binary Example"
 [image4]: ./examples/warped_straight_lines.jpg "Warp Example"
 [image5]: ./examples/color_fit_lines.jpg "Fit Visual"
@@ -147,6 +148,27 @@ Even though the result may not seem much like an improvement, the main benefit i
 throughout the video, the saturation is distributed much more evenly across frames and I was able to choose a much 
 higher and consistent saturation threshold than would otherwise have been possible. 
 
+However, in hindsight, this s channel histogram equalization may not have been that useful. Much more benefit 
+seems to be gained from the brightness normalization on the original image. Below are a couple of attempts
+ at finding a suitable s channel threshold without applying any colorspace normalization to the original images. 
+ 
+Here is the code that performs the brightness normalization: 
+ 
+```python
+def normalize_brightness(img):
+    img_yuv = cv2.cvtColor(img, cv2.COLOR_RGB2YUV)
+
+    # equalize the histogram of the Y channel
+    img_yuv[:, :, 0] = cv2.equalizeHist(img_yuv[:, :, 0])
+
+    # convert the YUV image back to RGB format
+    return cv2.cvtColor(img_yuv, cv2.COLOR_YUV2RGB)
+``` 
+ 
+Even though the general shape of the lane line is indeed captured for these easy cases, it is much more difficult
+to find the suitable threshold even for a single image, and the effect is even more dramatic when attempting to 
+find a suitable global threshold for all the video frames. 
+
 ![Looking for a suitable threshold for non-brightness normalized images][non_bright_norm_threshs]
 
 The final implementation can be seen at `masks/combined.py`, the function named `submission_combined`.
@@ -214,7 +236,7 @@ The video processing pipeline can be found in the `detect_lanes.py` file. Beside
 discussed, the main workhorse for the actual video processing part are the `detect_lanes` and `_process_video` 
 functions.
 
-For the video processing, as seen in the `process_video` function (lines FIXME), I used the `moviepy` library and 
+For the video processing, as seen in the `process_video` function (lines 98 - 111), I used the `moviepy` library and 
 its `moviepy.editor.VideoFileClip` class. 
 
 Reading the video using this method is rather straightworward, as is passing each invidivual frame to be processed 
@@ -231,7 +253,11 @@ transformed_clip.write_videofile(output_path, audio=False)
 
 As I need the distortion parameters `mtx` and `dist` for the `_process_image` function, I have wrapped the 
 function call in a lambda function so that fl_image can just go on and provide each frame as input, without 
-considering the other parameters.
+considering the other parameters. This code is reproduced below: 
+
+```python
+    transformed_clip = clip.fl_image(lambda image: _process_image(image, mtx, dist, left, right))
+```
 
 #### The resulting video
 
@@ -242,7 +268,7 @@ Your pipeline should perform reasonably well on the entire project video (wobbly
 failures that would cause the car to drive off the road!).
 ```
 
-Here's a [link to my video result](./project_video.mp4)
+Here's a [link to my video result](./transformed.mp4)
 
 ---
 

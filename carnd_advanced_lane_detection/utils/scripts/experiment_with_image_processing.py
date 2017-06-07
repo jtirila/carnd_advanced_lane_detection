@@ -7,7 +7,7 @@ from moviepy.editor import VideoFileClip
 
 from carnd_advanced_lane_detection import ROOT_DIR
 from carnd_advanced_lane_detection.image_transformations.colorspace_conversions import brg_to_rgb, rgb_to_s_channel, \
-    scale_grayscale_to_255, gray_to_rgb
+    scale_grayscale_to_255, gray_to_rgb, normalize_brightness, rgb_to_grayscale
 from carnd_advanced_lane_detection.image_transformations.perspective_transform import perspective_transform, \
     road_perspective_transform
 from carnd_advanced_lane_detection.masks.color_masks import saturation_mask
@@ -80,20 +80,11 @@ def display_single_saturation_masked_transformed_image_with_polyfit(image):
     visualize_lanes_with_polynomials(masked, left_fit, right_fit, nonzerox, nonzeroy, left_lane_inds, right_lane_inds, out_img)
 
 
-def _convert_color_image(img):
-    img_yuv = cv2.cvtColor(img, cv2.COLOR_RGB2YUV)
-
-    # equalize the histogram of the Y channel
-    img_yuv[:, :, 0] = cv2.equalizeHist(img_yuv[:, :, 0])
-
-    # convert the YUV image back to RGB format
-    return cv2.cvtColor(img_yuv, cv2.COLOR_YUV2RGB)
-
 
 def transform_and_saturation_mask_image(image):
     """FIXME: Again there is some redundancy"""
     # image = brg_to_rgb(image)
-    image = _convert_color_image(image)
+    image = normalize_brightness(image)
     perspective_image = road_perspective_transform(image)
     s_image = rgb_to_s_channel(perspective_image)
     equalized = cv2.equalizeHist(s_image)
@@ -110,6 +101,8 @@ def transform_and_saturation_mask_image(image):
 
 def display_transformed_frames():
     cap = cv2.VideoCapture(os.path.join(ROOT_DIR, 'project_video.mp4'))
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter(os.path.join(ROOT_DIR, 'mask_comparison.mp4'), fourcc, 20.0, (900, 900))
 
     frame_count = 1
     while cap.isOpened():
@@ -120,42 +113,77 @@ def display_transformed_frames():
 
         ret, frame = cap.read()
 
-        if 576 != frame_count:
-            continue
+        # if 576 != frame_count:
+        #     continue
 
         # rgb = brg_to_rgb(frame)
 
 
 
-        frame = _convert_color_image(frame)
+        # frame = normalize_brightness(frame)
         frame = road_perspective_transform(frame)
-        # if 400 < frame_count < 600:
-        #     mpimg.imsave("/tmp/frame-{}.png".format(frame_count - 2), frame)
-        s_image = rgb_to_s_channel(frame)
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-        equalized = clahe.apply(s_image)
-        mpimg.imsave("/tmp/problematic_s_channel.png", s_image)
-        mpimg.imsave("/tmp/problematic_s_channel_normalized.png", equalized)
-        # equalized = cv2.equalizeHist(s_image)
-        # masked = first_combined(frame)
-        # masked = dir_threshold(masked, 5, (0.76, 0.84), need_to_gray=False)
-        masked_normalized = saturation_mask(equalized, (254, 255))
-        masked_raw = saturation_mask(s_image, (254, 255))
-        mpimg.imsave("/tmp/problematic_masked_s_channel.png", masked_raw)
-        mpimg.imsave("/tmp/problematic_masked_s_channel_normalized.png", masked_normalized)
-        # masked = scale_grayscale_to_255(masked)
-        # masked = first_combined(frame)
-        #scaled_masked = scale_grayscale_to_255(masked)
+        if frame is not None:
+            frame_normalized = normalize_brightness(frame)
+            # if 400 < frame_count < 600:
+            #     mpimg.imsave("/tmp/frame-{}.png".format(frame_count - 2), frame)
+            s_image = rgb_to_s_channel(frame_normalized)
+            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+            equalized = clahe.apply(s_image)
 
 
-        # inversed = road_perspective_transform(scaled_masked, inverse=True)
+            s_image_nonnorm = rgb_to_s_channel(frame)
 
-        # scaled_masked = gray_to_rgb(scaled_masked)
-        cv2.imshow('frame', equalized)
+
+            equalized_nonnorm = clahe.apply(s_image_nonnorm)
+            combined_nonnorm = np.hstack((s_image_nonnorm, equalized_nonnorm))
+            combined_nonnorm = cv2.resize(combined_nonnorm, (900, 300))
+            masked_nonnorm = saturation_mask(combined_nonnorm, (170, 255))
+
+            equalized2 = normalize_brightness(gray_to_rgb(s_image))
+            equalized3 = normalize_brightness(gray_to_rgb(s_image_nonnorm))
+            combined_luminosity_normalized = np.hstack((equalized2, equalized3))
+            combined_luminosity_normalized = cv2.resize(combined_luminosity_normalized, (900, 300))
+            combined_luminosity_normalized = rgb_to_grayscale(combined_luminosity_normalized)
+            masked_3 = saturation_mask(combined_luminosity_normalized, (254,255))
+
+            # mpimg.imsave("/tmp/problematic_s_channel.png", s_image)
+            # mpimg.imsave("/tmp/problematic_s_channel_normalized.png", equalized)
+            # equalized = cv2.equalizeHist(s_image)
+            # masked = first_combined(frame)
+            # masked = dir_threshold(masked, 5, (0.76, 0.84), need_to_gray=False)
+            combined = np.hstack((s_image, equalized))
+            combined = cv2.resize(combined, (900, 300))
+            masked_normalized = saturation_mask(combined, (254, 255))
+
+            ultimate_combined = np.vstack((masked_normalized, masked_nonnorm, masked_3))
+            # masked_raw = saturation_mask(s_image, (254, 255))
+            # mpimg.imsave("/tmp/problematic_masked_s_channel.png", masked_raw)
+            # mpimg.imsave("/tmp/problematic_masked_s_channel_normalized.png", masked_normalized)
+            # masked = scale_grayscale_to_255(masked)
+            # masked = first_combined(frame)
+            #scaled_masked = scale_grayscale_to_255(masked)
+            ultimate_combined = scale_grayscale_to_255(ultimate_combined)
+
+            # if frame_count == 620:
+            #     cv2.imwrite('/tmp/sample_1.png', ultimate_combined)
+            # elif frame_count == 866:
+            #     cv2.imwrite('/tmp/sample_2.png', ultimate_combined)
+            # elif frame_count == 1001:
+            #     cv2.imwrite('/tmp/sample_3.png', ultimate_combined)
+            # elif frame_count == 1061:
+            #     cv2.imwrite('/tmp/sample_4.png', ultimate_combined)
+
+
+            # inversed = road_perspective_transform(scaled_masked, inverse=True)
+
+            # scaled_masked = gray_to_rgb(scaled_masked)
+            cv2.imshow('frame', ultimate_combined)
+            out.write(gray_to_rgb(ultimate_combined))
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
     cap.release()
+    out.release()
     cv2.destroyAllWindows()
 
 def display_partly_transformed_frames():

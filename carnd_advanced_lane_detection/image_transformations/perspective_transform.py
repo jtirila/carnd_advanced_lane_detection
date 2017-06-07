@@ -15,6 +15,8 @@ def road_perspective_transform(img, inverse=False):
     :return: An image object with the perspective transform applied, either forward transform if param inverse is 
              missing or False, or inverse transform if inverse param is set to True"""
 
+    if img is None:
+        return None
     transform_points_params = (ROAD_DST, ROAD_SRC) if inverse else (ROAD_SRC, ROAD_DST)
     return perspective_transform(img, *transform_points_params)
 
@@ -28,6 +30,7 @@ def perspective_transform(img, src, dst):
     :return: the image transformed with the input parameters using openCV's 
              warpPerspective function"""
 
+    assert img is not None
     m = cv2.getPerspectiveTransform(src, dst)
     return cv2.warpPerspective(img, m, (img.shape[1], img.shape[0]), flags=cv2.INTER_LINEAR)
 
