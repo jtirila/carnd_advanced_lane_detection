@@ -23,11 +23,6 @@ The goals / steps of this project are the following:
 [equalized_s_channel_image]: images/saturation_normalization.png "Equalized s channel image"
 [brightness_normalization]: images/brightness_normalization.png "Brightness normalization"
 [mask_comparison_video]: images/mask_comparison_video.mp4 "Mask comparison video"
-[image3]: ./examples/binary_combo_example.jpg "Binary Example"
-[image4]: ./examples/warped_straight_lines.jpg "Warp Example"
-[image5]: ./examples/color_fit_lines.jpg "Fit Visual"
-[image6]: ./examples/example_output.jpg "Output"
-[video1]: ./project_video.mp4 "Video"
 
 ## Overall notes on code organization
 
@@ -86,6 +81,27 @@ Next, I will outline the steps applied to process a _single image_. At this poin
 has already been distortion corrected. In the actual video processing pipeline, distortion correction will be taken 
 care of as the first step before proceeding to the steps below. 
 
+
+#### Luminosity normalization
+
+As a preliminary normalization step, I used a trick to equalize the luminosity histogram of the image. This is 
+performed by means of the following piece of code: 
+
+```python
+def normalize_brightness(img):
+    img_yuv = cv2.cvtColor(img, cv2.COLOR_RGB2YUV)
+
+    # equalize the histogram of the Y channel
+    img_yuv[:, :, 0] = cv2.equalizeHist(img_yuv[:, :, 0])
+
+    # convert the YUV image back to RGB format
+    return cv2.cvtColor(img_yuv, cv2.COLOR_YUV2RGB)
+``` 
+
+The results of this transformation can ben seen in the figure below. 
+
+![Brightness normalized image][brightness_normalization]
+
 #### Perspective transform 
 
 For the perspective transform, I simply chose the source manually by visual inspection from a suitable calibration 
@@ -97,6 +113,8 @@ The heavy lifting of performing the perspective transform was carried out using 
 as per the lecture examples. All the perspective transform related code can be found in the 
 `image_transformations/perspective_transform.py` file. Much of the code is just a wrapper around 
  OpenCV functions with some convenience default values. 
+
+
 
 Here is an example of applying the transform to the frame above:  
 
