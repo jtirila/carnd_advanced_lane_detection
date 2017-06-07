@@ -12,7 +12,7 @@ from carnd_advanced_lane_detection.image_transformations.perspective_transform i
 from carnd_advanced_lane_detection.masks.color_masks import saturation_mask
 import os
 
-PERSPECTIVE_CALIBRATION_IMAGE_PATH = os.path.join(ROOT_DIR, 'calibration_images', 'perspective_calibration_image.png')
+PERSPECTIVE_CALIBRATION_IMAGE_PATH = os.path.join(ROOT_DIR, 'images', 'perspective_calibration_image.png')
 
 # These are some simple scripts to obtain images for the written report
 
@@ -26,7 +26,9 @@ def visualize_undistortion():
 
 
 def visualize_undistorted_perspective_calibration_image():
-    open_visualize_single_image(PERSPECTIVE_CALIBRATION_IMAGE_PATH)
+    orig = mpimg.imread(PERSPECTIVE_CALIBRATION_IMAGE_PATH)
+    udist = undistort_image(orig)
+    one_by_two_plot(orig, udist, None, None, "Original image", "Undistorted image")
 
 
 def visualize_perspective_transformed_image():
@@ -34,7 +36,7 @@ def visualize_perspective_transformed_image():
     img_transformed = road_perspective_transform(img)
     plt.imshow(img_transformed)
     plt.show()
-    mpimg.imsave(os.path.join(ROOT_DIR, 'calibration_images', 'perspective_transformed_image.png'), img_transformed)
+    mpimg.imsave(os.path.join(ROOT_DIR, 'images', 'perspective_transformed_image.png'), img_transformed)
 
 
 def visualize_s_channel_normalization():
@@ -64,7 +66,7 @@ def visualize_s_channel_normalization():
 if __name__ == "__main__":
 
     # visualize_undistortion()
-    # visualize_undistorted_perspective_calibration_image()
+    visualize_undistorted_perspective_calibration_image()
     # visualize_perspective_transformed_image()
-    visualize_s_channel_normalization()
+    # visualize_s_channel_normalization()
 

@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from carnd_advanced_lane_detection import ROOT_DIR
 
-_CALIBRATION_IMAGE_PATHS = glob.glob(os.path.join(ROOT_DIR, 'calibration_images', 'calibration*.jpg'))
+_CALIBRATION_IMAGE_PATHS = glob.glob(os.path.join(ROOT_DIR, 'images', 'calibration*.jpg'))
 
 
 def read_calibration_images():

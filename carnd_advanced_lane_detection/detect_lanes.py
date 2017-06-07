@@ -82,7 +82,7 @@ def _process_image(image, mtx, dist, left_line, right_line):
     ret_img = road_perspective_transform(out_img, inverse=True)
     result = cv2.addWeighted(udist, 1, ret_img, 0.3, 0)
     avg_curverad = 0.5 * (left_line.calculate_curverad() + left_line.calculate_curverad())
-    offset = _fixme_compute_camera_offset(left_line, right_line)
+    offset = _compute_camera_offset(left_line, right_line)
     offset_dir = 'left' if offset > 0 else 'right'
     cv2.putText(result, "Curvature: {:.2f} m".format(avg_curverad), (100, 100), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), 2)
     cv2.putText(result, "Camera offset from lane center: {:.2f} m {}".format(
@@ -91,7 +91,7 @@ def _process_image(image, mtx, dist, left_line, right_line):
     return result
 
 
-def _fixme_compute_camera_offset(left_line, right_line):
+def _compute_camera_offset(left_line, right_line):
     return XM_PER_PIX * (0.5 * (left_line.compute_line_position_at_bottom() + right_line.compute_line_position_at_bottom()) - 640)
 
 

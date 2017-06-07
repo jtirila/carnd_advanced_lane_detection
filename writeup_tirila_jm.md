@@ -16,12 +16,13 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 
-[perspective_calibration_image]: ./calibration_images/perspective_calibration_image.png "Perspective calibration image"
-[undistorted_calibration_image]: ./calibration_images/undistorted_calibration_image.png "Undistorted calibration image"
-[perspective_transformed_image]: ./calibration_images/perspective_transformed_image.png "Undistorted calibration image"
-[non_bright_norm_threshs]: ./calibration_images/non_brightess_normalized_different_thresholds.png "Non brightness normalized, different thresholds"
-[equalized_s_channel_image]: ./calibration_images/saturation_normalization.png "Equalized s channel image"
-[brightness_normalization]: ./calibration_images/brightness_normalization.png "Brightness normalization"
+[perspective_calibration_image]: images/perspective_calibration_image.png "Perspective calibration image"
+[undistorted_calibration_image]: images/undistorted_calibration_image.png "Undistorted calibration image"
+[perspective_transformed_image]: images/perspective_transformed_image.png "Undistorted calibration image"
+[non_bright_norm_threshs]: images/non_brightess_normalized_different_thresholds.png "Non brightness normalized, different thresholds"
+[equalized_s_channel_image]: images/saturation_normalization.png "Equalized s channel image"
+[brightness_normalization]: images/brightness_normalization.png "Brightness normalization"
+[mask_comparison_video]: images/mask_comparison_video.mp4 "Mask comparison video"
 [image3]: ./examples/binary_combo_example.jpg "Binary Example"
 [image4]: ./examples/warped_straight_lines.jpg "Warp Example"
 [image5]: ./examples/color_fit_lines.jpg "Fit Visual"
@@ -128,7 +129,7 @@ The mask consist of an aggregate of a saturation mask and gradient magnitude mas
 
 
 
-#### Extracting the s channel
+##### Extracting the s channel
 
 For the saturation mask, the s channel extraction war performed exactly as per the lecture notes, first performing a 
 conversion to the HLS color space and there just selecting the S channel. 
@@ -171,9 +172,23 @@ find a suitable global threshold for all the video frames.
 
 ![Looking for a suitable threshold for non-brightness normalized images][non_bright_norm_threshs]
 
-The final implementation can be seen at `masks/combined.py`, the function named `submission_combined`.
+Also, below is a link to a video illustrating some attempts at coming up with a good mask. Even though the 
+methods to produce the top and bottom rows in the image are different, the results are almost identical. 
 
-FIXME: fill in final version of code
+The final implementation can be seen at `masks/combined_masks.py`, the function named `submission_combined`. The method 
+code is reproduced below: 
+
+```python
+def submission_combined(image):
+    s_image = rgb_to_s_channel(image)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    equalized = clahe.apply(s_image)
+    saturation_masked = saturation_mask(equalized, (220, 255))
+    grad_mag_thresholded = mag_thresh(image, 5, (30, 255))
+    combined = np.zeros_like(saturation_masked)
+    combined[(saturation_masked == 1) & (grad_mag_thresholded == 1)] = 1
+    return combined
+```
 
 #### Identifying left and right lane pixels, Fitting the polynomial and Computing the curvature
 
@@ -184,6 +199,13 @@ The lane pixel detection related code can be found at `models/line.py`. There ar
 not implemented as instance mainly due to performance reasons: it is more efficient to iterate through an image
 for both a left and right line simultaneously, so this is not performed per instance (left & right) but rather 
 in one pass. 
+
+The first of the two methods is for the case where search for lane pixels needs to be performed from scratch using
+the moving window method from the instruction notes. This code is in a function called 
+`find_lane_lines` (lines 122 - 190 of `line.py`). 
+
+The other method performs similar search based on a previous polynomial fit. This code can be found at 
+ `detect_line_pixels_based_on_previous_fit` (lines 71 - 95 of `line.py`). 
 
 As for the tracking part, I used a scheme simplified a bit from the project hints. The processing could be more 
 sophisticated, but I found out this was enough for my needs. So the process is as follows: 
@@ -219,8 +241,10 @@ sophisticated, but I found out this was enough for my needs. So the process is a
 
 ```
  
- No further tracking of the coefficients is performed. I figured the averaging would also smooth the curvature and 
- camera position computations enough. 
+No further tracking of the coefficients is performed. I figured the averaging would also smooth the curvature and 
+camera position computations enough. 
+
+As for display of curvature and camera position, I used 
 
 #### Visualizing the fitted polynomials and the lane area between them
 
@@ -259,14 +283,35 @@ considering the other parameters. This code is reproduced below:
     transformed_clip = clip.fl_image(lambda image: _process_image(image, mtx, dist, left, right))
 ```
 
-#### The resulting video
+##### Computing camera position 
 
+```python
+# line.py
+def compute_line_position_at_bottom(self):
+    coeffs = self.get_smoothed_coeffs()
+    pos = coeffs[0] ** 720**2 + coeffs[1] * 720 + coeffs[2]
+    return pos
 
-FIXME: 
+...
+
+# detect_lanes.py
+def _compute_camera_offset(left_line, right_line):
+    return XM_PER_PIX * (0.5 * (left_line.compute_line_position_at_bottom() + right_line.compute_line_position_at_bottom()) - 640)
 ```
-Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic 
-failures that would cause the car to drive off the road!).
+
+##### Displaying camera offset and curvature on the image
+
+For superimposing text upon an image, I used OpenCV's `putText` function as follows: 
+
+```python
+# detect_lanes.py
+cv2.putText(result, "Curvature: {:.2f} m".format(avg_curverad), (100, 100), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), 2)
+cv2.putText(result, "Camera offset from lane center: {:.2f} m {}".format(
+    np.absolute(offset),
+    offset_dir), (100, 150), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), 2)
 ```
+
+### The result
 
 Here's a [link to my video result](./transformed.mp4)
 

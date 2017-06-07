@@ -17,8 +17,8 @@ from carnd_advanced_lane_detection.utils.visualize_images import one_by_two_plot
     return_superimposed_polyfits
 from carnd_advanced_lane_detection.fit_functions.fit_polynomial import sliding_window_polyfit
 
-PERSPECTIVE_CALIBRATION_PATH = os.path.join(ROOT_DIR, 'calibration_images', 'perspective_calibration_image.png')
-PERSPECTIVE_TEST_PATH = os.path.join(ROOT_DIR, 'calibration_images', 'perspective_test_image.png')
+PERSPECTIVE_CALIBRATION_PATH = os.path.join(ROOT_DIR, 'images', 'perspective_calibration_image.png')
+PERSPECTIVE_TEST_PATH = os.path.join(ROOT_DIR, 'images', 'perspective_test_image.png')
 
 TRANSFORMED_VIDEO_OUTPUT_PATH = os.path.join(ROOT_DIR, 'transformed.mp4')
 
@@ -101,8 +101,9 @@ def transform_and_saturation_mask_image(image):
 
 def display_transformed_frames():
     cap = cv2.VideoCapture(os.path.join(ROOT_DIR, 'project_video.mp4'))
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter(os.path.join(ROOT_DIR, 'mask_comparison.mp4'), fourcc, 20.0, (900, 900))
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter()
+    out.open(os.path.join(ROOT_DIR, 'mask_comparison.mp4'), fourcc, 20.0, (900, 900), True)
 
     frame_count = 1
     while cap.isOpened():
@@ -112,6 +113,8 @@ def display_transformed_frames():
         frame_count += 1
 
         ret, frame = cap.read()
+        if not ret:
+            break
 
         # if 576 != frame_count:
         #     continue
