@@ -333,7 +333,7 @@ cv2.putText(result, "Camera offset from lane center: {:.2f} m {}".format(
 
 ### The result
 
-Here's a ![link to my video result][final_video]
+Here's a [link to my video result][final_video]
 
 ---
 
