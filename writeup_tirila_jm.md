@@ -22,7 +22,7 @@ The goals / steps of this project are the following:
 [non_bright_norm_threshs]: images/non_brightess_normalized_different_thresholds.png "Non brightness normalized, different thresholds"
 [equalized_s_channel_image]: images/saturation_normalization.png "Equalized s channel image"
 [brightness_normalization]: images/brightness_normalization.png "Brightness normalization"
-[mask_comparison_video]: images/mask_comparison_video.mp4 "Mask comparison video"
+[mask_comparison_video]: images/mask_comparison.mp4 "Mask comparison video"
 
 ## Overall notes on code organization
 
@@ -206,7 +206,7 @@ def submission_combined(image):
     return combined
 ```
 
-Finally, I prepared a! [video][mask_comparison_video] I used to compare the varying preprocessing steps masks, trying to identify 
+Finally, I prepared a ![video][mask_comparison_video] I used to compare the varying preprocessing steps masks, trying to identify 
 a suitable one. 
 
 #### Identifying left and right lane pixels, Fitting the polynomial and Computing the curvature
