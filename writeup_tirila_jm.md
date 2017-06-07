@@ -145,8 +145,6 @@ the `road_perspective_transform` function.
 After experimenting with different kinds of mask combinations, I ended up using a rather simple mask for this project: 
 The mask consist of an aggregate of a saturation mask and gradient magnitude mask. 
 
-
-
 ##### Extracting the s channel
 
 For the saturation mask, the s channel extraction war performed exactly as per the lecture notes, first performing a 
@@ -207,6 +205,9 @@ def submission_combined(image):
     combined[(saturation_masked == 1) & (grad_mag_thresholded == 1)] = 1
     return combined
 ```
+
+Finally, I prepared a! [video][mask_comparison_video] I used to compare the varying preprocessing steps masks, trying to identify 
+a suitable one. 
 
 #### Identifying left and right lane pixels, Fitting the polynomial and Computing the curvature
 
