@@ -207,8 +207,8 @@ def submission_combined(image):
     return combined
 ```
 
-Finally, I prepared a ![video][mask_comparison_video] I used to compare the varying preprocessing steps masks, trying to identify 
-a suitable one. 
+Finally, I prepared a [video][mask_comparison_video] I used to compare the varying preprocessing steps masks, 
+trying to identify a suitable one. 
 
 #### Identifying left and right lane pixels, Fitting the polynomial and Computing the curvature
 
