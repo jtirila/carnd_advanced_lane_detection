@@ -2,6 +2,7 @@ import os
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import image as mpimg
 from moviepy.editor import VideoFileClip
 
 from carnd_advanced_lane_detection import ROOT_DIR
@@ -112,31 +113,45 @@ def display_transformed_frames():
 
     frame_count = 1
     while cap.isOpened():
+
         print("Frame number {}".format(frame_count))
+
         frame_count += 1
+
         ret, frame = cap.read()
+
+        if 576 != frame_count:
+            continue
 
         # rgb = brg_to_rgb(frame)
 
 
+
         frame = _convert_color_image(frame)
         frame = road_perspective_transform(frame)
+        # if 400 < frame_count < 600:
+        #     mpimg.imsave("/tmp/frame-{}.png".format(frame_count - 2), frame)
         s_image = rgb_to_s_channel(frame)
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         equalized = clahe.apply(s_image)
+        mpimg.imsave("/tmp/problematic_s_channel.png", s_image)
+        mpimg.imsave("/tmp/problematic_s_channel_normalized.png", equalized)
         # equalized = cv2.equalizeHist(s_image)
         # masked = first_combined(frame)
         # masked = dir_threshold(masked, 5, (0.76, 0.84), need_to_gray=False)
-        masked = saturation_mask(equalized, (253, 255))
+        masked_normalized = saturation_mask(equalized, (254, 255))
+        masked_raw = saturation_mask(s_image, (254, 255))
+        mpimg.imsave("/tmp/problematic_masked_s_channel.png", masked_raw)
+        mpimg.imsave("/tmp/problematic_masked_s_channel_normalized.png", masked_normalized)
         # masked = scale_grayscale_to_255(masked)
         # masked = first_combined(frame)
-        scaled_masked = scale_grayscale_to_255(masked)
+        #scaled_masked = scale_grayscale_to_255(masked)
 
 
         # inversed = road_perspective_transform(scaled_masked, inverse=True)
 
-        scaled_masked = gray_to_rgb(scaled_masked)
-        cv2.imshow('frame', scaled_masked)
+        # scaled_masked = gray_to_rgb(scaled_masked)
+        cv2.imshow('frame', equalized)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 

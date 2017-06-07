@@ -9,6 +9,7 @@ from carnd_advanced_lane_detection.utils.visualize_images import one_by_two_plot
 from carnd_advanced_lane_detection import ROOT_DIR
 from carnd_advanced_lane_detection.utils.visualize_images import open_visualize_single_image
 from carnd_advanced_lane_detection.image_transformations.perspective_transform import road_perspective_transform
+from carnd_advanced_lane_detection.masks.color_masks import saturation_mask
 import os
 
 PERSPECTIVE_CALIBRATION_IMAGE_PATH = os.path.join(ROOT_DIR, 'calibration_images', 'perspective_calibration_image.png')
@@ -41,13 +42,23 @@ def visualize_s_channel_normalization():
     img_rgb = brg_to_rgb(img)
     img_normalized = normalize_brightness(img_rgb)
     img_transformed = road_perspective_transform(img_normalized)
+    img_transformed_2 = road_perspective_transform(img)
     one_by_two_plot(img_rgb, img_normalized, None, None, "Original", "Normalized")
     s_image = rgb_to_s_channel(img_transformed)
+    s_image_2 = rgb_to_s_channel(img_transformed_2)
     # scaled_s_image = scale_grayscale_to_255(s_image)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     equalized = clahe.apply(s_image)
-    # equalized = cv2.equalizeHist(s_image)
     one_by_two_plot(s_image, equalized, 'gray', 'gray', "Raw s channel", "Equalized s channel")
+    masked_normalized = saturation_mask(equalized, (254, 255))
+    masked_raw = saturation_mask(s_image, (254, 255))
+    masked_original_raw = saturation_mask(s_image_2, (254, 254))
+    masked_original_raw_2 = saturation_mask(s_image_2, (100, 254))
+    masked_original_raw_3 = saturation_mask(s_image_2, (170, 254))
+    # equalized = cv2.equalizeHist(s_image)
+    one_by_two_plot(masked_raw, masked_normalized, 'gray', 'gray', "S channel masked", "Normalized s channel masked")
+    one_by_two_plot(masked_raw, masked_original_raw, 'gray', 'gray', "S channel masked", "Original image, not brightness normalized, s channel masked, with same threshold")
+    one_by_two_plot(masked_original_raw_2, masked_original_raw_3, 'gray', 'gray', "Not brightness normalized or equalized, s channel lower thresh 60", "Not brightness normalized or equalized, s channel lower thresh 170")
 
 
 if __name__ == "__main__":

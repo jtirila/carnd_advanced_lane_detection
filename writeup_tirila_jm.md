@@ -19,6 +19,7 @@ The goals / steps of this project are the following:
 [perspective_calibration_image]: ./calibration_images/perspective_calibration_image.png "Perspective calibration image"
 [undistorted_calibration_image]: ./calibration_images/undistorted_calibration_image.png "Undistorted calibration image"
 [perspective_transformed_image]: ./calibration_images/perspective_transformed_image.png "Undistorted calibration image"
+[non_bright_norm_threshs]: ./calibration_images/non_brightess_normalized_different_thresholds.png "Non brightness normalized, different thresholds"
 [equalized_s_channel_image]: ./calibration_images/saturation_normalization.png "Equalized s channel image"
 [image3]: ./examples/binary_combo_example.jpg "Binary Example"
 [image4]: ./examples/warped_straight_lines.jpg "Warp Example"
@@ -34,7 +35,8 @@ all the assets, written reports and the code.
 
 The code lives under the innermost `carnd_advanced_lane_detection` 
 directory. **When referring to code files, I used the root of this code directory as the starting point to avoid 
-excessively long paths.**
+excessively long paths.** So, for example, when talking about the file 
+`carnd_advanced_lane_detection.detect_lanes.py`, I will simply refer to it as `detect_lanes.py`.
 
 The source file orhestrating the lane detection procedure is `detect_lanes.py`. It can be run as a script, or 
 one can import and run its detect_lanes function by
@@ -144,6 +146,8 @@ histogram equalized counterpart:
 Even though the result may not seem much like an improvement, the main benefit is that after the normalization 
 throughout the video, the saturation is distributed much more evenly across frames and I was able to choose a much 
 higher and consistent saturation threshold than would otherwise have been possible. 
+
+![Looking for a suitable threshold for non-brightness normalized images][non_bright_norm_threshs]
 
 The final implementation can be seen at `masks/combined.py`, the function named `submission_combined`.
 
