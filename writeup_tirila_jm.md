@@ -22,7 +22,8 @@ The goals / steps of this project are the following:
 [non_bright_norm_threshs]: images/non_brightess_normalized_different_thresholds.png "Non brightness normalized, different thresholds"
 [equalized_s_channel_image]: images/saturation_normalization.png "Equalized s channel image"
 [brightness_normalization]: images/brightness_normalization.png "Brightness normalization"
-[mask_comparison_video]: images/mask_comparison.mp4 "Mask comparison video"
+[mask_comparison_video]: mask_comparison.mp4 "Mask comparison video"
+[final_video]: transformed.mp4 "Transformed final video"
 
 ## Overall notes on code organization
 
@@ -332,7 +333,7 @@ cv2.putText(result, "Camera offset from lane center: {:.2f} m {}".format(
 
 ### The result
 
-Here's a [link to my video result](./transformed.mp4)
+Here's a ![link to my video result][!final_video]
 
 ---
 
