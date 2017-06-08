@@ -18,15 +18,17 @@ from carnd_advanced_lane_detection.preparations.calibrate_camera import calibrat
 from carnd_advanced_lane_detection.preparations.read_calibration_images import read_calibration_images
 from carnd_advanced_lane_detection.utils.visualize_images import return_superimposed_polyfits
 
-_TRANSFORMED_VIDEO_OUTPUT_PATH = os.path.join(ROOT_DIR, 'transformed.mp4')
 
 TEST = False
 # TEST = True
 COUNTER = 0
 
+_TRANSFORMED_VIDEO_OUTPUT_PATH = os.path.join(ROOT_DIR, 'transformed.mp4') if not TEST \
+    else os.path.join(ROOT_DIR, 'transformed_short.mp4')
+
 _PROJECT_VIDEO_PATH = os.path.join(ROOT_DIR, 'project_video.mp4') \
     if not TEST \
-    else os.path.join(ROOT_DIR, 'test_videos', 'middle_5_sec.mp4')
+    else os.path.join(ROOT_DIR, 'test_videos', 'beginning_5_sec.mp4')
 
 
 def _process_image(image, mtx, dist, left_line, right_line):
@@ -88,6 +90,11 @@ def _process_image(image, mtx, dist, left_line, right_line):
     cv2.putText(result, "Camera offset from lane center: {:.2f} m {}".format(
         np.absolute(offset),
         offset_dir), (100, 150), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), 2)
+    if TEST:
+        cv2.putText(result, "Left line position: {} pix".format(left_line.compute_line_position_at_bottom()), (100, 200), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), 2)
+        cv2.putText(result, "Right line position: {} pix".format(right_line.compute_line_position_at_bottom()), (100, 250), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), 2)
+        cv2.circle(result, (int(left_line.compute_line_position_at_bottom()), 720), 20, (0, 0, 255), 4)
+        cv2.circle(result, (int(right_line.compute_line_position_at_bottom()), 720), 20, (0, 0, 255), 4)
     return result
 
 

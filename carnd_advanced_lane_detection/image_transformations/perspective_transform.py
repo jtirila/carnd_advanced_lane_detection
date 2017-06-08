@@ -3,7 +3,7 @@ import numpy as np
 
 # TODO : determine good points for perspective transform, these are just the result of some early experiments
 ROAD_SRC = np.float32([[250, 720], [589, 463], [701, 463], [1030, 720]])
-ROAD_DST = np.float32([[250, 720], [250, 0], [1036, 0], [1036, 720]])
+ROAD_DST = np.float32([[250, 720], [250, 0], [1030, 0], [1030, 720]])
 
 
 def road_perspective_transform(img, inverse=False):

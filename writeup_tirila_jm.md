@@ -264,7 +264,24 @@ sophisticated, but I found out this was enough for my needs. So the process is a
 No further tracking of the coefficients is performed. I figured the averaging would also smooth the curvature and 
 camera position computations enough. 
 
-As for display of curvature and camera position, I used 
+As for display of curvature and camera position, I pretty much used the code provided in the instructions. Camera 
+position needed a bit of self-cooked arithmetic. My code had a small bug the first time I submitted the project, but 
+has now been corrected to the following: 
+
+```python
+# line.py
+def compute_line_position_at_bottom(self):
+    coeffs = self.get_smoothed_coeffs()
+    pos = coeffs[0] * 720**2 + coeffs[1] * 720 + coeffs[2]
+    return pos
+```
+
+The mistake was that instead of multiplication by `coeffs[0]`, I had exponentiation (`coeffs[0] ** 720**2`) so the 
+position was off.
+
+Another point worth mentioning in this context that to compute the camera position with this method to work, the 
+perspective transform needs to preserve the positions at the bottom of the image. I deliberately chose the perspective
+transform rectangle positions to fullfill this requirement. 
 
 #### Visualizing the fitted polynomials and the lane area between them
 

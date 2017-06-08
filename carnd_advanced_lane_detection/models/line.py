@@ -104,7 +104,7 @@ class Line():
 
     def compute_line_position_at_bottom(self):
         coeffs = self.get_smoothed_coeffs()
-        pos = coeffs[0] ** 720**2 + coeffs[1] * 720 + coeffs[2]
+        pos = coeffs[0] * 720**2 + coeffs[1] * 720 + coeffs[2]
         return pos
 
     def previous_fit_succeeded(self):
